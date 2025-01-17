@@ -46,6 +46,11 @@ class IBConnector(EWrapper, EClient):
             # Start the API event loop in a separate thread
             self.thread = threading.Thread(target=self.run, name="IBAPI-Thread", daemon=True)
             self.thread.start()
+
+            # Log the thread details
+            logging.info("API event loop started on thread: %s", self.thread.name)
+            logging.info("Client ID %s is active on thread %s", self.client_id, self.thread.name)
+
         except Exception as e:
             logging.error(f"Error during connection setup: {e}")
 
@@ -61,17 +66,6 @@ class IBConnector(EWrapper, EClient):
             # Optional: Give time for clean disconnect
             time.sleep(1)
             logging.info("Disconnected from IB API.")
-
-    # Override required EWrapper methods
-    def nextValidId(self, orderId: int):
-        """
-        Callback triggered when the IB API sends the first valid order ID.
-
-        Args:
-            orderId (int): The next valid order ID provided by the IB API.
-        """
-        self.connected = True
-        logging.info(f"Connected to IB API. Next valid order ID: {orderId}")
 
     def error(self, reqId: int, errorCode: int, errorMsg: str, advancedOrderRejectJson=None):
         """
@@ -96,6 +90,34 @@ class IBConnector(EWrapper, EClient):
         logging.warning("Connection to IB API closed.")
         self.connected = False
 
+    def get_connection_status(self):
+        """
+        Logs the status of all active threads and connection details.
+        """
+        logging.info("Checking connection status...")
+
+        if self.thread and self.thread.is_alive():
+            logging.info(
+                "Active Connection:\n"
+                " - Host: %s\n"
+                " - Port: %s\n"
+                " - Client ID: %s\n"
+                " - Thread Name: %s\n",
+                self.host,
+                self.port,
+                self.client_id,
+                self.thread.name,
+            )
+        else:
+            logging.warning("No active connection found.")
+
+        # Log all threads
+        logging.info("All running threads:")
+        for thread in threading.enumerate():
+            logging.info("Thread Name: %s, Is Daemon: %s", thread.name, thread.daemon)
+
+
+
 
 def create_ib_connector(host="127.0.0.1", port=7497, client_id=0):
     """
@@ -117,6 +139,7 @@ def create_ib_connector(host="127.0.0.1", port=7497, client_id=0):
     if connector.isConnected():
         connector.connected = True
         logging.info("Successfully connected to IB API.")
+        connector.get_connection_status()
     else:
         raise ConnectionError("Connection failed: Not connected to IB API.")
 
