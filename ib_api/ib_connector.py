@@ -4,13 +4,12 @@ ib_connector.py
 Manages connection to the Interactive Brokers API. Combines EWrapper and EClient
 into a single IBConnector class, ensuring robust connection lifecycle management.
 """
-
+import logging
 from ibapi.client import EClient
 from ibapi.wrapper import EWrapper
-import logging
+from stochasticstreet.ib_api.logging_config import setup_logging
 import threading
 import time
-
 
 class IBConnector(EWrapper, EClient):
     """
@@ -90,6 +89,13 @@ class IBConnector(EWrapper, EClient):
         logging.warning("Connection to IB API closed.")
         self.connected = False
 
+    def get_local_ip(self):
+        import socket
+        try:
+            return socket.gethostbyname(socket.gethostname())
+        except Exception as e:
+            return f"Error retrieving IP: {e}"
+
     def get_connection_status(self):
         """
         Logs the status of all active threads and connection details.
@@ -110,6 +116,8 @@ class IBConnector(EWrapper, EClient):
             )
         else:
             logging.warning("No active connection found.")
+            ip = self.get_local_ip()
+            logging.error(f"Error starting connection. Try running the IB Gateway or TWS on {ip}:{self.port}")
 
         # Log all threads
         logging.info("All running threads:")
@@ -147,9 +155,6 @@ def create_ib_connector(host="127.0.0.1", port=7497, client_id=0):
 
 
 if __name__ == "__main__":
-    # Example usage
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-
     try:
         # Initialize and start the connection
         connector = create_ib_connector(host="127.0.0.1", port=7497, client_id=123)

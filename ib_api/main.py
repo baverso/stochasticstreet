@@ -5,56 +5,45 @@ This module is the entry point for the IB API client application.
 Initialize the IBConnector, start the connection, and handle user input for the client application.
 This module is responsible for managing the lifecycle of the IB API client application.
 """
-
 import logging
 import argparse
 from stochasticstreet.ib_api.ib_connector import IBConnector
-from stochasticstreet.ib_api.ib_utils import get_local_ip
-import os
+from stochasticstreet.ib_api.logging_config import setup_logging
+
 import time
-
-# Ensure the logs directory exists
-os.makedirs("logs", exist_ok=True)
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-    handlers=[
-        logging.FileHandler("logs/ib_api_connection.log"),
-        logging.StreamHandler()
-    ],
-)
-
-logger = logging.getLogger(__name__)
 
 def main(host, port, client_id):
     """
     Main entry point for the IB API client application.
     Initialize the IBConnector, start the connection, and handle user input for the client application.
+
+    Args:
+        host (str): Hostname of the IB Gateway or TWS.
+        port (int): Port number of the IB Gateway or TWS.
+        client_id (int): Unique client ID for this session.
     """
-    logger.info("Starting IB API client...")
+    logging.info("Starting IB API client...")
 
     # Initialize the IBConnector
     app = IBConnector(host=host, port=port, client_id=client_id)
 
     # Start the connection
     try:
-        logger.info("Starting connection to IB API...")
+        logging.info("Starting connection to IB API...")
         app.start_connection()
         time.sleep(10)
-        app.disconnect()
+        app.get_connection_status()
+
     except Exception as e:
-        ip = get_local_ip()
-        logger.error(f"Error starting connection: {e}, try running the IB Gateway or TWS on {ip}:{port}")
+        logging.error(f"Error starting connection: {e}, try running the IB Gateway or TWS first.")
         return
     except KeyboardInterrupt:
-        logger.info("Connection interrupted by user.")
+        logging.info("Connection interrupted by user.")
         return
     finally:
         # Stop the connection
         app.stop_connection()
-        logger.info("IB API client stopped.")
+        logging.info("IB API client stopped.")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="IB API client application")
