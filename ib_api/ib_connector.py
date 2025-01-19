@@ -10,13 +10,14 @@ from ibapi.wrapper import EWrapper
 from stochasticstreet.ib_api.logging_config import setup_logging
 import threading
 import time
+import socket
 
 class IBConnector(EWrapper, EClient):
     """
     IBConnector combines EWrapper and EClient to manage the connection to the IB API.
     """
 
-    def __init__(self, host="127.0.0.1", port=7497, client_id=0):
+    def __init__(self, host="127.0.0.1", port=7497, client_id=1):
         """
         Initializes the IBConnector.
 
@@ -31,8 +32,23 @@ class IBConnector(EWrapper, EClient):
         self.host = host
         self.port = port
         self.client_id = client_id
-        self.connected = False
         self.thread = None
+    def get_local_ip(self):
+        """
+        Retrieves the local IP address of the machine.
+
+        Returns:
+            str: The local IP address of the machine.
+        """
+        try:
+            # Use a dummy connection to determine the local IP
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+                # Connect to an external address; the actual packet won't be sent
+                s.connect(("8.8.8.8", 80))
+                ip = s.getsockname()[0]
+            return ip
+        except Exception as e:
+            return f"Unable to determine local IP: {e}"
 
     def start_connection(self):
         """
@@ -41,6 +57,9 @@ class IBConnector(EWrapper, EClient):
         try:
             logging.info("Attempting to connect to IB API... on %s:%s", self.host, self.port)
             self.connect(self.host, self.port, self.client_id)
+
+            if self.isConnected():
+                logging.info("Connection established to IB API")
 
             # Start the API event loop in a separate thread
             self.thread = threading.Thread(target=self.run, name="IBAPI-Thread", daemon=True)
@@ -57,44 +76,22 @@ class IBConnector(EWrapper, EClient):
         """
         Stops the connection to the IB Gateway or TWS.
         """
-        if self.connected:
-            logging.info("Disconnecting from IB API...")
-            self.disconnect()
-            self.connected = False
+        logging.info(f"Connection status is: {self.isConnected()} for client ID: {self.client_id}")
 
-            # Optional: Give time for clean disconnect
-            time.sleep(1)
-            logging.info("Disconnected from IB API.")
+        if not self.isConnected():
+            logging.warning("Attempted to disconnect, but no active connection exists.")
+            return
 
-    def error(self, reqId: int, errorCode: int, errorMsg: str, advancedOrderRejectJson=None):
-        """
-        Handles errors received from the IB API.
+        logging.info("Stopping connection: Client ID=%s", self.client_id)
+        self.disconnect()
 
-        Args:
-            reqId (int): The request ID associated with the error.
-            errorCode (int): The error code from IB API.
-            errorMsg (str): A descriptive message for the error.
-            advancedOrderRejectJson (str, optional): JSON with advanced order rejection details (if provided).
-        """
-        if advancedOrderRejectJson:
-            logging.error(
-                f"Error. ReqId: {reqId}, Code: {errorCode}, Msg: {errorMsg}, AdvancedReject: {advancedOrderRejectJson}")
+        # Optional: Give time for clean disconnect
+        time.sleep(1)
+
+        if not self.isConnected():
+            logging.info("Successfully disconnected from IB API.")
         else:
-            logging.error(f"Error. ReqId: {reqId}, Code: {errorCode}, Msg: {errorMsg}")
-
-    def connectionClosed(self):
-        """
-        Callback triggered when the connection to the IB API is closed.
-        """
-        logging.warning("Connection to IB API closed.")
-        self.connected = False
-
-    def get_local_ip(self):
-        import socket
-        try:
-            return socket.gethostbyname(socket.gethostname())
-        except Exception as e:
-            return f"Error retrieving IP: {e}"
+            logging.error("Failed to properly disconnect from IB API.")
 
     def get_connection_status(self):
         """
@@ -102,7 +99,7 @@ class IBConnector(EWrapper, EClient):
         """
         logging.info("Checking connection status...")
 
-        if self.thread and self.thread.is_alive():
+        if self.isConnected():
             logging.info(
                 "Active Connection:\n"
                 " - Host: %s\n"
@@ -112,22 +109,19 @@ class IBConnector(EWrapper, EClient):
                 self.host,
                 self.port,
                 self.client_id,
-                self.thread.name,
+                self.thread.name if self.thread else "No Thread",
             )
         else:
             logging.warning("No active connection found.")
             ip = self.get_local_ip()
-            logging.error(f"Error starting connection. Try running the IB Gateway or TWS on {ip}:{self.port}")
+            logging.error(f"Connection inactive. Try running the IB Gateway or TWS on {ip}:{self.port}")
 
         # Log all threads
         logging.info("All running threads:")
         for thread in threading.enumerate():
             logging.info("Thread Name: %s, Is Daemon: %s", thread.name, thread.daemon)
 
-
-
-
-def create_ib_connector(host="127.0.0.1", port=7497, client_id=0):
+def create_ib_connector(host="127.0.0.1", port=7497, client_id=1):
     """
     Creates and connects an IBConnector instance.
 
@@ -140,16 +134,15 @@ def create_ib_connector(host="127.0.0.1", port=7497, client_id=0):
         IBConnector: A connected IBConnector instance.
     """
     connector = IBConnector(host, port, client_id)
-    connector.start_connection()
 
-    # Allow time for the connection to establish
-    time.sleep(10)
     if connector.isConnected():
-        connector.connected = True
-        logging.info("Successfully connected to IB API.")
+        logging.info("IB is already connected on %s:%s", host, port)
         connector.get_connection_status()
     else:
-        raise ConnectionError("Connection failed: Not connected to IB API.")
+        logging.info("IB is not connected on %s:%s", host, port)
+        connector.start_connection()
+        logging.info("Successfully connected to IB API.")
+        connector.get_connection_status()
 
     return connector
 
@@ -157,16 +150,18 @@ def create_ib_connector(host="127.0.0.1", port=7497, client_id=0):
 if __name__ == "__main__":
     try:
         # Initialize and start the connection
-        connector = create_ib_connector(host="127.0.0.1", port=7497, client_id=123)
+        connector = create_ib_connector(host="127.0.0.1", port=4002, client_id=1)
 
         # Keep the connection active for testing purposes
         logging.info("Connection active. Sleeping for 5 seconds...")
         time.sleep(5)
 
     except KeyboardInterrupt:
+        connector.stop_connection()
         logging.info("KeyboardInterrupt received. Exiting...")
 
     finally:
         # Ensure clean disconnection
         connector.stop_connection()
         logging.info("IBConnector stopped.")
+

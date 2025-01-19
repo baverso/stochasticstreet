@@ -8,6 +8,7 @@ This module is responsible for managing the lifecycle of the IB API client appli
 import logging
 import argparse
 from stochasticstreet.ib_api.ib_connector import IBConnector
+from stochasticstreet.ib_api.ib_requests import IBRequests
 from stochasticstreet.ib_api.logging_config import setup_logging
 
 import time
@@ -28,27 +29,26 @@ def main(host, port, client_id):
     app = IBConnector(host=host, port=port, client_id=client_id)
 
     # Start the connection
-    try:
-        logging.info("Starting connection to IB API...")
-        app.start_connection()
-        time.sleep(10)
-        app.get_connection_status()
+    logging.info("Starting connection to IB API...")
+    app.start_connection()
+    logging.info("Press Ctrl+C to stop the connection.")
+    app.get_connection_status()
 
-    except Exception as e:
-        logging.error(f"Error starting connection: {e}, try running the IB Gateway or TWS first.")
-        return
-    except KeyboardInterrupt:
-        logging.info("Connection interrupted by user.")
-        return
-    finally:
-        # Stop the connection
-        app.stop_connection()
-        logging.info("IB API client stopped.")
+    # Perform account requests
+    logging.info("Requesting account information...")
+    requests = IBRequests(app)
+    # Perform account summary requests
+    logging.info("Requesting account summaries...")
+    requests.request_account_summary(req_id=9001)  # Regular mode
+    requests.request_account_summary(req_id=9002, verbose=True)  # Verbose mode
+
+    # Close the connection
+    app.stop_connection()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="IB API client application")
     parser.add_argument("--host", type=str, default="127.0.0.1", help="Hostname of the IB Gateway or TWS")
-    parser.add_argument("--port", type=int, default=7497, help="Port number of the IB Gateway or TWS")
+    parser.add_argument("--port", type=int, default=4002, help="Port number of the IB Gateway or TWS")
     parser.add_argument("--client_id", type=int, default=1, help="Unique client ID")
 
     args = parser.parse_args()
