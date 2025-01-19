@@ -11,7 +11,7 @@ from stochasticstreet.ib_api.ib_connector import IBConnector
 from stochasticstreet.ib_api.ib_requests import IBRequests
 from stochasticstreet.ib_api.logging_config import setup_logging
 
-import time
+
 
 def main(host, port, client_id):
     """
