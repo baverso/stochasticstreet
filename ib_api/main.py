@@ -7,11 +7,8 @@ This module is responsible for managing the lifecycle of the IB API client appli
 """
 import logging
 import argparse
-from stochasticstreet.ib_api.ib_connector import IBConnector
-from stochasticstreet.ib_api.ib_requests import IBRequests
-from stochasticstreet.ib_api.logging_config import setup_logging
-
-
+from stochasticstreet.ib_api import IBCallbacks, IBRequests, IBConnector
+import time
 
 def main(host, port, client_id):
     """
@@ -26,24 +23,29 @@ def main(host, port, client_id):
     logging.info("Starting IB API client...")
 
     # Initialize the IBConnector
-    app = IBConnector(host=host, port=port, client_id=client_id)
+    connector = IBConnector(host=host, port=port, client_id=client_id)
+
+    # Properly instantiate and register callbacks to the connector instance
+    callbacks = IBCallbacks()
+    connector.register_callbacks(callbacks)
+
+    # Initialize the IBRequests class
+    requests = IBRequests(connector)  # Pass the connector instance to the requests class
 
     # Start the connection
     logging.info("Starting connection to IB API...")
-    app.start_connection()
+    connector.start_connection()
     logging.info("Press Ctrl+C to stop the connection.")
-    app.get_connection_status()
+    connector.get_connection_status()
+    time.sleep(5)
 
-    # Perform account requests
-    logging.info("Requesting account information...")
-    requests = IBRequests(app)
     # Perform account summary requests
     logging.info("Requesting account summaries...")
     requests.request_account_summary(req_id=9001)  # Regular mode
     requests.request_account_summary(req_id=9002, verbose=True)  # Verbose mode
 
     # Close the connection
-    app.stop_connection()
+    connector.stop_connection()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="IB API client application")

@@ -5,18 +5,15 @@ Manages connection to the Interactive Brokers API. Combines EWrapper and EClient
 into a single IBConnector class, ensuring robust connection lifecycle management.
 """
 import logging
-from ibapi.client import EClient
-from ibapi.wrapper import EWrapper
-from stochasticstreet.ib_api.logging_config import setup_logging
+from stochasticstreet.ib_api import IBBase
 import threading
 import time
 import socket
 
-class IBConnector(EWrapper, EClient):
+class IBConnector(IBBase):
     """
     IBConnector combines EWrapper and EClient to manage the connection to the IB API.
     """
-
     def __init__(self, host="127.0.0.1", port=7497, client_id=1):
         """
         Initializes the IBConnector.
@@ -26,13 +23,23 @@ class IBConnector(EWrapper, EClient):
             port (int): Port number of the IB Gateway or TWS.
             client_id (int): A unique client ID for this session.
         """
-        EWrapper.__init__(self)
-        EClient.__init__(self, self)
-
+        super().__init__()
         self.host = host
         self.port = port
         self.client_id = client_id
         self.thread = None
+        self.callbacks = None  # Placeholder for callback handler
+
+    def register_callbacks(self, callback_handler):
+        """
+        Registers a callback handler to handle events from the IB API.
+
+        Args:
+            callback_handler: An instance of the callback handler (e.g., IBCallbacks).
+        """
+        self.callbacks = callback_handler
+        logging.info("Callbacks registered successfully.")
+
     def get_local_ip(self):
         """
         Retrieves the local IP address of the machine.
@@ -54,23 +61,37 @@ class IBConnector(EWrapper, EClient):
         """
         Starts the connection to the IB Gateway or TWS.
         """
+        if self.isConnected():
+            logging.warning(
+                "Already connected to IB API: Host=%s, Port=%s, Client ID=%s",
+                self.host, self.port, self.client_id,
+            )
+            return
+
         try:
-            logging.info("Attempting to connect to IB API... on %s:%s", self.host, self.port)
+            logging.info(
+                "Starting connection: Host=%s, Port=%s, Client ID=%s",
+                self.host, self.port, self.client_id,
+            )
+
+            # Connect to the IB Gateway or TWS
             self.connect(self.host, self.port, self.client_id)
 
-            if self.isConnected():
-                logging.info("Connection established to IB API")
-
             # Start the API event loop in a separate thread
-            self.thread = threading.Thread(target=self.run, name="IBAPI-Thread", daemon=True)
+            self.thread = threading.Thread(target=self.run, name=f"IBAPI-Thread-{self.client_id}", daemon=True)
             self.thread.start()
 
-            # Log the thread details
-            logging.info("API event loop started on thread: %s", self.thread.name)
-            logging.info("Client ID %s is active on thread %s", self.client_id, self.thread.name)
+            # Wait for the connection to establish
+            timeout = 10  # Maximum wait time in seconds
+            start_time = time.time()
+            while not self.isConnected():
+                if time.time() - start_time > timeout:
+                    raise TimeoutError("Connection timed out.")
+                time.sleep(0.1)  # Polling interval
 
+            logging.info("Successfully connected to IB API.")
         except Exception as e:
-            logging.error(f"Error during connection setup: {e}")
+            logging.error("Error starting connection: %s", e)
 
     def stop_connection(self):
         """
@@ -154,7 +175,7 @@ if __name__ == "__main__":
 
         # Keep the connection active for testing purposes
         logging.info("Connection active. Sleeping for 5 seconds...")
-        time.sleep(5)
+        time.sleep(10)
 
     except KeyboardInterrupt:
         connector.stop_connection()
