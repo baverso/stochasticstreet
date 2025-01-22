@@ -7,11 +7,25 @@ class IBCallbacks:
     Processes data returned by the API and forwards it to the appropriate handlers.
     """
 
-    def __init__(self):
+    def __init__(self, connector):
         """
         Initializes the IBRequests class.
         """
-        super().__init__()
+        self.connector = connector
+        self._register_callbacks()
+
+    def _register_callbacks(self):
+        """Register all callback handlers with the connector"""
+        self.connector.register_callback('marketData', self.on_market_data)
+        self.connector.register_callback('accountSummary', self.on_account_summary)
+
+    def on_market_data(self, reqId, field, price, *args):
+        """Example callback handler"""
+        logging.info(f"Market Data - ReqId: {reqId}, Field: {field}, Price: {price}")
+
+    def on_account_summary(self, reqId, account, tag, value, currency):
+        """Example callback handler"""
+        logging.info(f"Account Summary - {account}: {tag}={value} {currency}")
 
     # Connection-related callbacks
     def connectAck(self):

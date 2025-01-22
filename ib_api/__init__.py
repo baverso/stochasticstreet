@@ -8,10 +8,10 @@ This package handles all interactions with the Interactive Brokers API, includin
 - Providing utilities for data formatting and logging
 """
 
-from stochasticstreet.ib_api.ib_base import IBBase
-from stochasticstreet.ib_api.ib_connector import IBConnector
-from stochasticstreet.ib_api.ib_callbacks import IBCallbacks
-from stochasticstreet.ib_api.ib_requests import IBRequests
+from .ib_base import IBBase
+from .ib_connector import IBConnector
+from .ib_callbacks import IBCallbacks
+from .ib_requests import IBRequests
 from stochasticstreet.ib_api.logging_config import LoggingConfig
 
 
