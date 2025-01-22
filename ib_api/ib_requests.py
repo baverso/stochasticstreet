@@ -1,5 +1,5 @@
 import logging
-from stochasticstreet.ib_api.ib_base import IBBase
+from .ib_base import IBBase
 
 class IBRequests(IBBase):
     """
