@@ -9,5 +9,5 @@ class IBBase(EWrapper, EClient):
     This is used to streamline the initialization of the IBConnector class.
     """
     def __init__(self):
-        EWrapper.__init__(self)
         EClient.__init__(self, self)
+        EWrapper.__init__(self)

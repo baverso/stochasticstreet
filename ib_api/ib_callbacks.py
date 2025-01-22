@@ -1,7 +1,7 @@
 import logging
-from stochasticstreet.ib_api import IBBase
+from stochasticstreet.ib_api.ib_base import IBBase
 
-class IBCallbacks(IBBase):
+class IBCallbacks:
     """
     Handles all callbacks from the Interactive Brokers API.
     Processes data returned by the API and forwards it to the appropriate handlers.
@@ -45,6 +45,7 @@ class IBCallbacks(IBBase):
 
     # Account summary-related callbacks
     def accountSummary(self, reqId, account, tag, value, currency):
+        logging.info("triggered here.")
         logging.info(
             "Account Summary - ReqId: %d, Account: %s, Tag: %s, Value: %s, Currency: %s",
             reqId, account, tag, value, currency,

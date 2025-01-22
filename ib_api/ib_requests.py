@@ -1,7 +1,7 @@
 import logging
 from stochasticstreet.ib_api.ib_base import IBBase
 
-class IBRequests:
+class IBRequests(IBBase):
     """
     Handles all API requests for the Interactive Brokers API.
     """
@@ -16,17 +16,16 @@ class IBRequests:
         if not isinstance(connector, IBBase):
             raise ValueError("Connector must inherit from IBBase.")
         self.connector = connector
-
-    def _ensure_connected(self):
-        """
-        Ensures the connector is connected to the IB API.
-
-        Raises:
-            ConnectionError: If the connector is not connected.
-        """
         if not self.connector.isConnected():
             logging.error("No active connection to IB API found in IBRequests")
             raise ConnectionError("Connector may be connected but IBRequests cannot find.")
+
+    def accountSummary(self, reqId, account, tag, value, currency):
+        logging.info(
+            "Account Summary - ReqId: %d, Account: %s, Tag: %s, Value: %s, Currency: %s",
+            reqId, account, tag, value, currency,
+        )
+
     def request_account_summary(self, req_id, verbose=False):
         """
         Request account summary based on verbosity.

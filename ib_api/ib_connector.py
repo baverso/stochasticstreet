@@ -5,12 +5,16 @@ Manages connection to the Interactive Brokers API. Combines EWrapper and EClient
 into a single IBConnector class, ensuring robust connection lifecycle management.
 """
 import logging
-from stochasticstreet.ib_api import IBBase
+# from stochasticstreet.ib_api import IBBase
+
+from ibapi.client import EClient
+from ibapi.wrapper import EWrapper
+
 import threading
 import time
 import socket
 
-class IBConnector(IBBase):
+class IBConnector(EClient, EWrapper):
     """
     IBConnector combines EWrapper and EClient to manage the connection to the IB API.
     """
@@ -23,7 +27,10 @@ class IBConnector(IBBase):
             port (int): Port number of the IB Gateway or TWS.
             client_id (int): A unique client ID for this session.
         """
-        super().__init__()
+        # super().__init__()
+        EWrapper.__init__(self)
+        EClient.__init__(self, self)
+
         self.host = host
         self.port = port
         self.client_id = client_id

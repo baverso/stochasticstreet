@@ -10,6 +10,9 @@ import argparse
 from stochasticstreet.ib_api import IBCallbacks, IBRequests, IBConnector
 import time
 
+from ibapi.client import EClient
+from ibapi.wrapper import EWrapper
+
 def main(host, port, client_id):
     """
     Main entry point for the IB API client application.
@@ -26,11 +29,9 @@ def main(host, port, client_id):
     connector = IBConnector(host=host, port=port, client_id=client_id)
 
     # Properly instantiate and register callbacks to the connector instance
-    callbacks = IBCallbacks()
-    connector.register_callbacks(callbacks)
+    # callbacks = IBCallbacks()
+    # connector.register_callbacks(callbacks)
 
-    # Initialize the IBRequests class
-    requests = IBRequests(connector)  # Pass the connector instance to the requests class
 
     # Start the connection
     logging.info("Starting connection to IB API...")
@@ -39,6 +40,8 @@ def main(host, port, client_id):
     connector.get_connection_status()
     time.sleep(5)
 
+    # Initialize the IBRequests class
+    requests = IBRequests(connector)  # Pass the connector instance to the requests class
     # Perform account summary requests
     logging.info("Requesting account summaries...")
     requests.request_account_summary(req_id=9001)  # Regular mode
