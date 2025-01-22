@@ -13,39 +13,37 @@ from ibapi.wrapper import EWrapper
 import threading
 import time
 import socket
+from ib_base import IBBase
 
-class IBConnector(EClient, EWrapper):
+class IBConnector(IBBase):
     """
-    IBConnector combines EWrapper and EClient to manage the connection to the IB API.
+    Main connector class that handles the IB API connection.
+    Inherits from IBBase to maintain single inheritance chain for callbacks.
     """
-    def __init__(self, host="127.0.0.1", port=7497, client_id=1):
-        """
-        Initializes the IBConnector.
+    def __init__(self):
+        super().__init__()
+        self._lock = threading.Lock()
+        self.callbacks = {}  # Store callback handlers
+        
+    def start(self, host="127.0.0.1", port=7496, clientId=1):
+        """Start the connection and API thread"""
+        self.connect(host, port, clientId)
+        self.thread = threading.Thread(target=self.run)
+        self.thread.start()
+        
+    def register_callback(self, event_name, callback_fn):
+        """Register custom callback handlers"""
+        with self._lock:
+            self.callbacks[event_name] = callback_fn
 
+    def register_callbacks(self, callbacks_dict):
+        """
+        Register multiple callbacks at once
+        
         Args:
-            host (str): Hostname of the IB Gateway or TWS.
-            port (int): Port number of the IB Gateway or TWS.
-            client_id (int): A unique client ID for this session.
+            callbacks_dict (dict): Dictionary mapping callback names to callback functions
         """
-        # super().__init__()
-        EWrapper.__init__(self)
-        EClient.__init__(self, self)
-
-        self.host = host
-        self.port = port
-        self.client_id = client_id
-        self.thread = None
-        self.callbacks = None  # Placeholder for callback handler
-
-    def register_callbacks(self, callback_handler):
-        """
-        Registers a callback handler to handle events from the IB API.
-
-        Args:
-            callback_handler: An instance of the callback handler (e.g., IBCallbacks).
-        """
-        self.callbacks = callback_handler
-        logging.info("Callbacks registered successfully.")
+        self.callbacks.update(callbacks_dict)
 
     def get_local_ip(self):
         """
@@ -161,14 +159,14 @@ def create_ib_connector(host="127.0.0.1", port=7497, client_id=1):
     Returns:
         IBConnector: A connected IBConnector instance.
     """
-    connector = IBConnector(host, port, client_id)
+    connector = IBConnector()
 
     if connector.isConnected():
         logging.info("IB is already connected on %s:%s", host, port)
         connector.get_connection_status()
     else:
         logging.info("IB is not connected on %s:%s", host, port)
-        connector.start_connection()
+        connector.start(host, port, client_id)
         logging.info("Successfully connected to IB API.")
         connector.get_connection_status()
 

@@ -12,8 +12,7 @@ from .ib_base import IBBase
 from .ib_connector import IBConnector
 from .ib_callbacks import IBCallbacks
 from .ib_requests import IBRequests
-from stochasticstreet.ib_api.logging_config import LoggingConfig
-
+from .logging_config import LoggingConfig
 
 # Initialize logging for the package
 LoggingConfig.setup_logging()

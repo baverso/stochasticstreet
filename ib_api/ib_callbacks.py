@@ -1,5 +1,5 @@
 import logging
-from stochasticstreet.ib_api.ib_base import IBBase
+from ib_base import IBBase
 
 class IBCallbacks:
     """
@@ -16,8 +16,11 @@ class IBCallbacks:
 
     def _register_callbacks(self):
         """Register all callback handlers with the connector"""
-        self.connector.register_callback('marketData', self.on_market_data)
-        self.connector.register_callback('accountSummary', self.on_account_summary)
+        callbacks = {
+            'marketData': self.on_market_data,
+            'accountSummary': self.on_account_summary
+        }
+        self.connector.register_callbacks(callbacks)
 
     def on_market_data(self, reqId, field, price, *args):
         """Example callback handler"""

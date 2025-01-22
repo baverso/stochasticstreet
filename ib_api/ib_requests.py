@@ -1,24 +1,20 @@
 import logging
-from .ib_base import IBBase
-
-class IBRequests(IBBase):
+from ib_base import IBBase
+class IBRequests:
     """
-    Handles all API requests for the Interactive Brokers API.
+    Handles all API requests through the connector.
+    No longer inherits from IBBase - works through connector instead.
     """
-
     def __init__(self, connector):
-        """
-        Initializes the IBRequests class with a connector.
-
-        Args:
-            connector (IBConnector): An instance of IBConnector for managing the connection.
-        """
-        if not isinstance(connector, IBBase):
-            raise ValueError("Connector must inherit from IBBase.")
         self.connector = connector
-        if not self.connector.isConnected():
-            logging.error("No active connection to IB API found in IBRequests")
-            raise ConnectionError("Connector may be connected but IBRequests cannot find.")
+        
+    def request_market_data(self, contract, tick_list=""):
+        """Example request method"""
+        if not self.connector.connected:
+            raise ConnectionError("Not connected to IB")
+        reqId = self.connector.next_valid_id
+        self.connector.reqMktData(reqId, contract, tick_list, False, False, [])
+        return reqId
 
     def accountSummary(self, reqId, account, tag, value, currency):
         logging.info(
