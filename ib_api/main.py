@@ -27,8 +27,9 @@ def main():
     ib = IBConnector(callbacks=callbacks)
 
     # Connect to the IB gateway / TWS.
-    # By default, TWS runs on 127.0.0.1:7497 or 7496 for IB Gateway
-    ib.connect(host="127.0.0.1", port=4002, client_id=1)
+    # By default, TWS runs on 127.0.0.1:7497 or 7496
+    # IB Gateway runs on 127.0.0.1:4001 or 4002
+    ib.connect(host="127.0.0.1", port=4001, client_id=1)
 
     # Start the networking thread to process messages from IB
     ib.start()
