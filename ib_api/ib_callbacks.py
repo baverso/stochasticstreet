@@ -1,221 +1,77 @@
+"""
+ib_callbacks.py
+
+This module contains a class (IBCallbacks) that inherits from EWrapper
+and overrides callback methods. You can add methods to handle all events
+such as tickPrice, orderStatus, historicalData, etc.
+"""
+
 import logging
-from ib_base import IBBase
+from ibapi.wrapper import EWrapper
 
-class IBCallbacks:
+from datetime import datetime, timezone, timedelta
+
+
+class IBCallbacks(EWrapper):
     """
-    Handles all callbacks from the Interactive Brokers API.
-    Processes data returned by the API and forwards it to the appropriate handlers.
+    A dedicated class to handle all callbacks from the IB API (EWrapper).
+    Custom logic for data handling, logging, or data frames can be placed here.
     """
 
-    def __init__(self, connector):
-        """
-        Initializes the IBRequests class.
-        """
-        self.connector = connector
-        self._register_callbacks()
+    def __init__(self):
+        super().__init__()
+        self.logger = logging.getLogger(self.__class__.__name__)
 
-    def _register_callbacks(self):
-        """Register all callback handlers with the connector"""
-        callbacks = {
-            'marketData': self.on_market_data,
-            'accountSummary': self.on_account_summary
-        }
-        self.connector.register_callbacks(callbacks)
-
-    def on_market_data(self, reqId, field, price, *args):
-        """Example callback handler"""
-        logging.info(f"Market Data - ReqId: {reqId}, Field: {field}, Price: {price}")
-
-    def on_account_summary(self, reqId, account, tag, value, currency):
-        """Example callback handler"""
-        logging.info(f"Account Summary - {account}: {tag}={value} {currency}")
-
-    # Connection-related callbacks
-    def connectAck(self):
+    def error(self, reqId, errorCode, errorString, advancedOrderRejectJson=""):
         """
-        Called when the API acknowledges the connection.
+        Handles errors sent from TWS/IB gateway.
         """
-        logging.info("Connection acknowledged by IB API.")
-
-    def connectionClosed(self):
-        """
-        Called when the connection to the IB API is closed.
-        """
-        logging.warning("Connection to IB API closed.")
-
-    def error(self, reqId, errorCode, errorMsg, advancedOrderRejectJson=""):
-        """
-        Handles errors received from the API.
-
-        Args:
-            reqId (int): The request ID associated with the error.
-            errorCode (int): The error code returned by the API.
-            errorMsg (str): A descriptive error message.
-            advancedOrderRejectJson (str, optional): Advanced order rejection details.
-        """
-        if advancedOrderRejectJson:
-            logging.error(
-                f"Error. ReqId: {reqId}, Code: {errorCode}, Msg: {errorMsg}, AdvancedReject: {advancedOrderRejectJson}"
+        if reqId > 0:
+            self.logger.error(
+                f"Error. Id: {reqId}, Code: {errorCode}, Msg: {errorString}. "
+                f"AdvancedOrderRejectJson: {advancedOrderRejectJson}"
             )
         else:
-            logging.error(f"ERROR ReqId: {reqId}, Code: {errorCode}, Msg: {errorMsg}")
+            self.logger.warning(
+                f"TWS Warning. Code: {errorCode}, Msg: {errorString}. "
+                f"AdvancedOrderRejectJson: {advancedOrderRejectJson}"
+            )
 
-    # Account summary-related callbacks
-    def accountSummary(self, reqId, account, tag, value, currency):
-        logging.info("triggered here.")
-        logging.info(
-            "Account Summary - ReqId: %d, Account: %s, Tag: %s, Value: %s, Currency: %s",
-            reqId, account, tag, value, currency,
-        )
 
-    def accountSummaryEnd(self, reqId):
+
+    def currentTime(self, time_from_server):
         """
-        Called when all account summary data for a request has been received.
-
-        Args:
-            reqId (int): The request ID for this summary.
+        Callback when the current time is returned from IB.
+        Converts the Unix timestamp to a human-readable format in EST.
         """
-        logging.info("Account Summary End: ReqId=%s", reqId)
+        # Convert the timestamp to UTC datetime
+        utc_time = datetime.fromtimestamp(time_from_server, tz=timezone.utc)
 
-    # Position-related callbacks
-    def position(self, account, contract, position, avgCost):
-        """
-        Called when position data is received.
+        # Convert UTC to EST (adjusting for daylight saving time if necessary)
+        est_offset = timedelta(hours=-5)  # EST is UTC-5
+        est_time = utc_time + est_offset
 
-        Args:
-            account (str): The account identifier.
-            contract (Contract): The contract for this position.
-            position (float): The number of units held.
-            avgCost (float): The average cost of the position.
-        """
-        logging.info(
-            "Position: Account=%s, Contract=%s, Position=%s, AvgCost=%s",
-            account,
-            contract.symbol,
-            position,
-            avgCost,
-        )
+        # Log both UTC and EST time
+        self.logger.info(f"Current IB server time (UTC): {utc_time.strftime('%Y-%m-%d %H:%M:%S %Z')}")
+        self.logger.info(f"Current IB server time (EST): {est_time.strftime('%Y-%m-%d %H:%M:%S %Z')}")
 
-    def positionEnd(self):
-        """
-        Called when all position data has been received.
-        """
-        logging.info("Position data received completely.")
-
-    # Market data-related callbacks
     def tickPrice(self, reqId, tickType, price, attrib):
         """
-        Called when tick price data is received.
-
-        Args:
-            reqId (int): The request ID for this tick data.
-            tickType (int): The type of tick (e.g., bid, ask, last).
-            price (float): The price value.
-            attrib (TickAttrib): Additional tick attributes.
+        Handles tick price events for market data.
+        You can also handle tickSize, tickString, etc.
         """
-        logging.info(
-            "Tick Price: ReqId=%s, TickType=%s, Price=%s", reqId, tickType, price
+        self.logger.info(
+            f"Tick Price. Ticker Id: {reqId}, Field: {tickType}, Price: {price}"
         )
 
-    def tickSize(self, reqId, tickType, size):
-        """
-        Called when tick size data is received.
+    # Add more callbacks as needed...
+    # def tickSize(self, reqId, tickType, size):
+    #     pass
 
-        Args:
-            reqId (int): The request ID for this tick data.
-            tickType (int): The type of tick (e.g., bid size, ask size).
-            size (int): The size value.
-        """
-        logging.info(
-            "Tick Size: ReqId=%s, TickType=%s, Size=%s", reqId, tickType, size
-        )
+    # def historicalData(self, reqId, bar):
+    #     pass
 
-    def tickSnapshotEnd(self, reqId):
-        """
-        Called when a tick snapshot is complete.
-
-        Args:
-            reqId (int): The request ID for this snapshot.
-        """
-        logging.info("Tick Snapshot End: ReqId=%s", reqId)
-
-    # Contract details callbacks
-    def contractDetails(self, reqId, contractDetails):
-        """
-        Called when contract details are received.
-
-        Args:
-            reqId (int): The request ID for this data.
-            contractDetails (ContractDetails): The details of the contract.
-        """
-        logging.info(
-            "Contract Details: ReqId=%s, Symbol=%s, Exchange=%s",
-            reqId,
-            contractDetails.contract.symbol,
-            contractDetails.contract.exchange,
-        )
-
-    def contractDetailsEnd(self, reqId):
-        """
-        Called when all contract details for a request have been received.
-
-        Args:
-            reqId (int): The request ID for this data.
-        """
-        logging.info("Contract Details End: ReqId=%s", reqId)
-
-    # Order-related callbacks
-    def openOrder(self, orderId, contract, order, orderState):
-        """
-        Called when an open order is received.
-
-        Args:
-            orderId (int): The order ID.
-            contract (Contract): The contract for the order.
-            order (Order): The details of the order.
-            orderState (OrderState): The state of the order.
-        """
-        logging.info(
-            "Open Order: OrderId=%s, Contract=%s, OrderType=%s, Status=%s",
-            orderId,
-            contract.symbol,
-            order.orderType,
-            orderState.status,
-        )
-
-    def orderStatus(self, orderId, status, filled, remaining, avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld, mktCapPrice):
-        """
-        Called when order status is updated.
-
-        Args:
-            orderId (int): The order ID.
-            status (str): The order status.
-            filled (float): The number of units filled.
-            remaining (float): The number of units remaining.
-            avgFillPrice (float): The average fill price.
-        """
-        logging.info(
-            "Order Status: OrderId=%s, Status=%s, Filled=%s, Remaining=%s, AvgFillPrice=%s",
-            orderId,
-            status,
-            filled,
-            remaining,
-            avgFillPrice,
-        )
-
-    def execDetails(self, reqId, contract, execution):
-        """
-        Called when execution details are received.
-
-        Args:
-            reqId (int): The request ID.
-            contract (Contract): The contract for the execution.
-            execution (Execution): The execution details.
-        """
-        logging.info(
-            "Execution Details: ReqId=%s, Contract=%s, ExecId=%s, Shares=%s",
-            reqId,
-            contract.symbol,
-            execution.execId,
-            execution.shares,
-        )
+    # def orderStatus(self, orderId, status, filled, remaining, avgFillPrice,
+    #                 permId, parentId, lastFillPrice, clientId,
+    #                 whyHeld, mktCapPrice):
+    #     pass

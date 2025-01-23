@@ -1,75 +1,68 @@
 """
 main.py
 
-This module is the entry point for the IB API client application.
-Initialize the IBConnector, start the connection, and handle user input for the client application.
-This module is responsible for managing the lifecycle of the IB API client application.
+Entry point for the IB API application. Demonstrates how to use the
+IBConnector, IBRequests, and IBCallbacks classes together.
 """
+
 import logging
-import argparse
-from ibapi.contract import Contract
-from ib_connector import IBConnector
-from ib_callbacks import IBCallbacks
-from ib_requests import IBRequests
 import time
 
-from ibapi.client import EClient
-from ibapi.wrapper import EWrapper
+from ib_connector import IBConnector
+from ib_requests import IBRequests
+from ib_callbacks import IBCallbacks
 
-def create_contract():
-    """Create a sample contract for testing"""
+
+def main():
+    # Configure logging (optional)
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s %(levelname)s %(name)s %(message)s'
+    )
+
+    # Create an instance of our custom EWrapper
+    callbacks = IBCallbacks()
+
+    # Create a connector (EClient) and pass in our callbacks
+    ib = IBConnector(callbacks=callbacks)
+
+    # Connect to the IB gateway / TWS.
+    # By default, TWS runs on 127.0.0.1:7497 or 7496 for IB Gateway
+    ib.connect(host="127.0.0.1", port=4002, client_id=1)
+
+    # Start the networking thread to process messages from IB
+    ib.start()
+
+    # Give IB a moment to finalize the connection
+    time.sleep(2)
+
+    ib.get_connection_status()
+
+    # Make some example requests
+    requests = IBRequests(ib)
+
+    # Example: Request the current time (simple test)
+    requests.request_current_time()
+    time.sleep(2)
+
+    # Example: Request Market Data for a given symbol
+    # Here, you'd need to set up a Contract object
+    from ibapi.contract import Contract
+
     contract = Contract()
     contract.symbol = "AAPL"
     contract.secType = "STK"
     contract.exchange = "SMART"
     contract.currency = "USD"
-    return contract
 
-def main():
-    # Create single connector instance that handles both EClient and EWrapper
-    connector = IBConnector()
-    
-    # Initialize requests and callbacks with the connector
-    callbacks = IBCallbacks(connector)
-    requests = IBRequests(connector)
-    
-    try:
-        # Start the connection
-        connector.start(host="127.0.0.1", port=7497, clientId=1)  # Changed port to 7497 for paper trading
-        
-        # Wait for connection to be established
-        print("Connecting to IB...")
-        max_wait = 10  # Maximum seconds to wait
-        wait_time = 0
-        while not connector.connected and wait_time < max_wait:
-            time.sleep(1)
-            wait_time += 1
-            
-        if not connector.connected:
-            print("Failed to connect to IB after {} seconds".format(max_wait))
-            return
-            
-        print("Successfully connected to IB")
-        
-        # Now you can use requests and callbacks will work
-        contract = create_contract()
-        requests.request_market_data(contract)
-        
-        # Keep the main thread running
-        while True:
-            time.sleep(1)
-            
-    except KeyboardInterrupt:
-        print("\nShutting down gracefully...")
-    except ConnectionError as e:
-        print(f"Connection error: {e}")
-        print("Please ensure that:")
-        print("1. TWS or IB Gateway is running")
-        print("2. API connections are enabled in TWS/Gateway")
-        print("3. You're using the correct port (7496 for live, 7497 for paper trading)")
-    finally:
-        if hasattr(connector, 'connected') and connector.connected:
-            connector.stop_connection()
+    requests.request_market_data(req_id=1, contract=contract)
+
+    # Let some data flow in
+    time.sleep(10)
+
+    # Disconnect
+    ib.disconnect()
+
 
 if __name__ == "__main__":
     main()

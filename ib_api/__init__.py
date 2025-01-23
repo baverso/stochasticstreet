@@ -8,13 +8,11 @@ This package handles all interactions with the Interactive Brokers API, includin
 - Providing utilities for data formatting and logging
 """
 
-from .ib_base import IBBase
-from .ib_connector import IBConnector
 from .ib_callbacks import IBCallbacks
+from .ib_connector import IBConnector
 from .ib_requests import IBRequests
 from .logging_config import LoggingConfig
 
-# Initialize logging for the package
 LoggingConfig.setup_logging()
 
 # Package-level constants (customize as needed)
@@ -25,7 +23,6 @@ __all__ = [
     "IBConnector",
     "IBCallbacks",
     "IBRequests",
-    "IBBase",
     "LoggingConfig",
     "PACKAGE_NAME",
     "VERSION",
