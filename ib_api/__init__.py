@@ -11,7 +11,7 @@ This package handles all interactions with the Interactive Brokers API, includin
 from .ib_callbacks import IBCallbacks
 from .ib_connector import IBConnector
 from .ib_requests import IBRequests
-from .logging_config import LoggingConfig
+from .logging_config_json import LoggingConfig
 
 LoggingConfig.setup_logging()
 
