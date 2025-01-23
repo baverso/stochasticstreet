@@ -13,7 +13,7 @@ import threading
 from ibapi.client import EClient
 from ibapi.wrapper import EWrapper
 
-# If you want to use the IBCallbacks, you can pass it or bind it here
+
 class IBConnector(EClient):
     """
     Manages the connection to the IB Gateway or TWS instance.
@@ -21,18 +21,22 @@ class IBConnector(EClient):
 
     def __init__(self, callbacks: EWrapper):
         """
-        :param callbacks: An instance of a class inheriting EWrapper (e.g. IBCallbacks).
-        """
-        # We combine EClient with an EWrapper instance
-        # This structure allows us to separate the EWrapper logic
-        # from the EClient logic more cleanly.
-        EClient.__init__(self, wrapper=callbacks)
+        Initialize the IBConnector.
 
+        Args:
+            callbacks: An instance of a class inheriting EWrapper (e.g., IBCallbacks).
+        """
+        EClient.__init__(self, wrapper=callbacks)
         self.logger = logging.getLogger(self.__class__.__name__)
 
     def connect(self, host: str = "127.0.0.1", port: int = 7497, client_id: int = 1):
         """
         Connect to a running TWS/IB Gateway instance.
+
+        Args:
+            host (str): The hostname or IP address of the IB Gateway/TWS.
+            port (int): The port number of the IB Gateway/TWS.
+            client_id (int): A unique client ID for this session.
         """
         self.logger.info(f"Connecting to IB on host={host}, port={port}, clientId={client_id}")
         super().connect(host, port, client_id)
@@ -52,6 +56,16 @@ class IBConnector(EClient):
         self.logger.info("Disconnecting from IB.")
         super().disconnect()
 
+    def server_version(self):
+        """
+        Retrieves the server version of the connected TWS/Gateway.
+
+        Returns:
+            int: The server version.
+        """
+        version = super().serverVersion()
+        self.logger.info(f"Connected to IB server version: {version}")
+        return version
 
     def get_local_ip(self):
         """
@@ -61,9 +75,7 @@ class IBConnector(EClient):
             str: The local IP address of the machine.
         """
         try:
-            # Use a dummy connection to determine the local IP
             with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-                # Connect to an external address; the actual packet won't be sent
                 s.connect(("8.8.8.8", 80))
                 ip = s.getsockname()[0]
             return ip
