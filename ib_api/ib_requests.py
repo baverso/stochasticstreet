@@ -59,7 +59,80 @@ class IBRequests:
                                 bar_size_setting: str, what_to_show: str, use_rth: int, format_date: int):
         """
         Request historical data from IB for a given contract.
-        Callback is handled in IBCallbacks.historicalData().
+        The data is returned via the `historicalData` callback.
+
+        Args:
+            req_id (int):
+                A unique identifier for the request.
+                Example: 1001
+
+            contract (Contract):
+                An IBAPI Contract object representing the financial instrument for which historical data is requested.
+                Example: A Contract object for "AAPL" (Apple Inc.) or ES futures.
+
+            end_date_time (str):
+                The request's end date and time in the format 'YYYYMMDD HH:MM:SS' (in the local time zone).
+                This defines the most recent point in time for the data requested.
+                Example: '20250122 23:59:59'
+
+            duration_str (str):
+                The duration of the data request, specifying how much historical data is retrieved.
+                Valid examples:
+                - '1 D' (1 day)
+                - '1 W' (1 week)
+                - '1 M' (1 month)
+                - '3 Y' (3 years)
+
+            bar_size_setting (str):
+                The size of the bars (candlesticks) in the returned data.
+                Examples:
+                - '1 min' (1-minute bars)
+                - '5 mins' (5-minute bars)
+                - '1 day' (daily bars)
+                - '1 hour' (hourly bars)
+
+            what_to_show (str):
+                Specifies the type of data to retrieve. Common values include:
+                - 'TRADES': Trade prices.
+                - 'MIDPOINT': The midpoint of the bid and ask.
+                - 'BID': Bid prices.
+                - 'ASK': Ask prices.
+                - 'BID_ASK': Both bid and ask data.
+                - 'HISTORICAL_VOLATILITY': Historical volatility data.
+                - 'OPTION_IMPLIED_VOLATILITY': Option implied volatility data.
+
+            use_rth (int):
+                Whether to use regular trading hours (RTH) only:
+                - 1: Yes, retrieve data from regular trading hours only.
+                - 0: No, include all available hours (e.g., pre-market and after-hours).
+
+            format_date (int):
+                Specifies the format of the returned dates:
+                - 1: Date and time in the format 'YYYYMMDD HH:MM:SS'.
+                - 2: Epoch time (number of seconds since January 1, 1970).
+
+        Returns:
+            None. The data is retrieved asynchronously and delivered via the `historicalData` callback.
+
+        Example Usage:
+            # Create a Contract for Apple Inc.
+            contract = Contract()
+            contract.symbol = "AAPL"
+            contract.secType = "STK"
+            contract.exchange = "SMART"
+            contract.currency = "USD"
+
+            # Request 1 week of 1-hour bars for Apple Inc., showing trade prices
+            self.request_historical_data(
+                req_id=1001,
+                contract=contract,
+                end_date_time='20250122 23:59:59',
+                duration_str='1 W',
+                bar_size_setting='1 hour',
+                what_to_show='TRADES',
+                use_rth=1,
+                format_date=1
+            )
         """
         self.logger.info(f"Requesting historical data for ReqId={req_id}, Symbol={contract.symbol}.")
         self.ib.reqHistoricalData(
@@ -71,10 +144,9 @@ class IBRequests:
             what_to_show,
             use_rth,
             format_date,
-            False,
+            False,  # False for historical data only (not streaming updates)
             []
         )
-
     # Example placeholder for placing an order:
     # def place_order(self, order_id: int, contract: Contract, order: Order):
     #     self.logger.info(f"Placing order Id={order_id}, Symbol={contract.symbol}.")
