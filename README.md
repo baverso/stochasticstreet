@@ -1,10 +1,13 @@
-![Banner Image](images/bannerimage.jpeg "StochasticStreet Banner")
+
 
 # StochasticStreet: An Open-Source Algotrading Platform
 
 **StochasticStreet** is an open-source project dedicated to building flexible, modular utilities for algorithmic trading using Interactive Brokers (IBKR), Denali/CME data feeds, Sierra Chart (via DTC protocol), and Python-based machine learning workflows. By clearly separating concerns (data collection, real-time feeds, trading logic, order execution, and research notebooks), we aim to create a maintainable and extensible foundation for **backtesting**, **forward-testing**, **simulation**, and **live trading**.
 
-> Inspired by projects like [ib_insync](https://github.com/erdewit/ib_insync) (for its clean design and user-friendliness), **StochasticStreet** adds additional layers of data plumbing—from Denali/CME feeds to Sierra Chart’s DTC server—alongside the Interactive Brokers API for order routing and account management.
+
+![Banner Image](images/bannerimage.jpeg "StochasticStreet Banner")
+
+> **StochasticStreet** adds additional layers of data plumbing—from Denali/CME feeds to Sierra Chart’s DTC server—alongside the Interactive Brokers API for order routing and account management.
 
 ---
 
