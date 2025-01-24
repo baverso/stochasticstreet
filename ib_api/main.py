@@ -14,18 +14,17 @@ import argparse
 import logging
 import time
 
-# Local imports
-from ib_connector import IBConnector
-from ib_requests import IBRequests
-from ib_callbacks import IBCallbacks
-from ib_contract import IBContract
-from ib_orders import IBOrders
+# Relative imports from within the same package directory:
+from .ib_connector import IBConnector
+from .ib_requests import IBRequests
+from .ib_callbacks import IBCallbacks
+from .ib_contract import IBContract
+from .ib_orders import IBOrders
+from .logging_config_json import LoggingConfig
 
-# Additional IB API imports
+# Additional IB API imports:
 from ibapi.execution import ExecutionFilter
 from ibapi.scanner import ScannerSubscription
-
-
 def parse_arguments():
     """Parse command-line arguments for IB connection configuration."""
     parser = argparse.ArgumentParser(description="Python IBAPI Client Example")
@@ -43,13 +42,8 @@ def parse_arguments():
 def main():
     args = parse_arguments()
 
-    # ------------------------------------------------------------------------------
-    # 1. LOGGING SETUP
-    # ------------------------------------------------------------------------------
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s %(levelname)s %(name)s %(message)s'
-    )
+    # 1. JSON LOGGING SETUP (replacing logging.basicConfig calls)
+    LoggingConfig.setup_logging()
 
     # ------------------------------------------------------------------------------
     # 2. CREATE CALLBACKS + CONNECTOR + START THREAD

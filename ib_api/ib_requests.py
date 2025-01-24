@@ -576,7 +576,7 @@ class IBRequests:
             - `updateMktDepthL2()`: Provides level 2 market depth updates.
         """
         self.logger.info(f"Requesting market depth for ReqId={req_id}, Contract={contract.symbol}.")
-        self.ib.reqMktDepth(req_id, contract, num_rows, [])
+        self.ib.reqMktDepth(req_id, contract, num_rows, False, [])
 
     def cancel_mkt_depth(self, req_id):
         """
@@ -589,7 +589,7 @@ class IBRequests:
             - None (Stops updateMktDepth and updateMktDepthL2 callbacks).
         """
         self.logger.info(f"Cancelling market depth for ReqId={req_id}.")
-        self.ib.cancelMktDepth(req_id)
+        self.ib.cancelMktDepth(req_id, False)
 
     def req_news_bulletins(self, all_messages):
         """
